@@ -1,7 +1,9 @@
-const API_URL = "https://script.google.com/macros/s/AKfycbzBhpqUD8MKO-IqQgzsiwS6IMYxUQjqiHmwcZBRKBEK1E26BviCliw9tcbhT2NyZUid3A/exec";
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>서연초 협의 취합</title>
-<meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@700&family=IBM+Plex+Sans+KR:wght@400;500;600&display=swap">
 <style>
@@ -58,6 +60,8 @@ header.top{display:flex;flex-wrap:wrap;justify-content:space-between;align-items
 .roundform{display:grid;grid-template-columns:1fr 180px;gap:10px;border-top:1px dashed var(--line);padding-top:12px}
 .roundform .full{grid-column:1/-1}
 .roundform textarea{min-height:70px}
+.adminform{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;border-top:1px dashed var(--line);padding-top:12px}
+.adminform label{flex:1;min-width:200px}
 
 .layout{display:grid;grid-template-columns:230px minmax(0,1fr);gap:18px;align-items:start}
 nav.units{display:flex;flex-direction:column;gap:14px;position:sticky;top:calc(env(safe-area-inset-top,0px) + 12px)}
@@ -139,7 +143,9 @@ details .posts{margin-top:8px}
 }
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
-
+<style>[hidden]{display:none!important} :root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)} body{margin:0}</style>
+</head>
+<body>
 <div class="wrap">
   <header class="top">
     <div>
@@ -159,10 +165,16 @@ details .posts{margin-top:8px}
       <select id="roundSel" aria-label="협의 회차"><option>불러오는 중…</option></select>
       <span class="due" id="roundDue"></span>
       <span style="flex:1"></span>
+      <button id="btnDelRound" class="ghost" hidden>회차 삭제</button>
       <button id="btnEditRound" class="ghost" hidden>회차 수정</button>
       <button id="btnNewRound" hidden>새 회차 열기</button>
+      <button id="btnAdmin" class="ghost">관리자</button>
     </div>
     <div class="agenda" id="roundDesc"></div>
+    <form class="adminform" id="adminForm" hidden>
+      <label>관리자 비밀번호<input id="adPw" type="password" autocomplete="current-password"></label>
+      <div class="actions"><button type="button" id="adCancel" class="ghost">취소</button><button type="submit" class="primary" id="adOk">확인</button></div>
+    </form>
     <form class="roundform" id="roundForm" hidden>
       <label>회차 이름<input id="rfTitle" required maxlength="60" placeholder="예: 11월 교육과정 평가회 협의"></label>
       <label>마감일<input id="rfDue" type="date"></label>
@@ -181,6 +193,10 @@ details .posts{margin-top:8px}
 <div class="toast" id="toast" hidden></div>
 
 <script>
+/* ===== 설정: 구글 Apps Script 웹 앱 주소를 따옴표 안에 붙여 넣으세요 ===== */
+const API_URL = "여기에_웹앱_URL을_붙여넣으세요";
+/* ======================================================================= */
+
 const UNITS = [
  {key:"gyomu",name:"교무기획부",kind:"dept",head:"편세훈",roster:[["편세훈","교무기획·미래학교"],["김춘섭","학교운영위원회"],["유선형","NEIS 업무(1)"],["강수지","NEIS 업무(2)"],["박향애","체험학습"],["박송이","학부모회"],["박솔빈","정보공시·학교평가"],["이새봄","중입배정·학생표창"],["박은지","졸업앨범"],["신윤희","교육홍보"],["김예솔","친목"],["조창우","특수교육(1)"],["심준호","특수교육(2)"],["허진경","특수교육(3)"],["최유리","특수교육(4)"],["이근희","교무실무사 · 학적관리·신입생 입학·교과서"],["정숙희","교무실무사 · 공문서관리·수업계·운영위원회 지원"],["임현주","과학실무사 · 과학실험 지원·홈페이지·정보화기기"]]},
  {key:"curri",name:"교육과정부",kind:"dept",head:"유태현",roster:[["유태현","교육과정 운영"],["허다영","장학 및 수업"],["김경집","교원연구회·연수·영어"],["김민희","학습공동체·포상"],["심미정","교원역량·경제교육"],["황진이","학력평가"],["정은영","교과서·진단총괄평가"],["백은미","기초학력"],["박지영","캠프·학습도약계절학기"],["김세미","두드림·학습지원튜터"],["조용주","기초학습지원센터"],["홍지은","도서관·독서교육"]]},
@@ -201,42 +217,97 @@ const UNITS = [
 const U = Object.fromEntries(UNITS.map(u=>[u.key,u]));
 const headTitle = u => u.headLabel || (u.kind==="dept" ? `${u.head} 부장` : `${u.head} 학년부장`);
 
-const S = {db:null,user:null,uid:null,canWrite:null,isAdmin:false,
-  rounds:[],roundId:null,posts:[],sums:{},unit:"gyomu",mode:"write",
-  editingId:null,sumDirty:false,unsub:[],loaded:false};
-
-const $ = id => document.getElementById(id);
-const esc = s => String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-const fmt = t => { if(!t) return ""; const d=new Date(t); const p=n=>String(n).padStart(2,"0"); return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
-const ls = { get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}} };
-let toastT; function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600);}
-function fail(e){ const c=e&&e.code; if(c==="invalid_argument"&&S.canWrite!==true){S.canWrite=false;mountMain();toast("작성 권한이 없어 저장하지 못했습니다.");return;}
-  toast(c==="quota_exceeded"?"저장 공간이 가득 찼습니다. 관리자에게 알려 주세요.":"저장하지 못했습니다. 잠시 후 다시 눌러 주세요."); }
-
-const unitPosts = k => S.posts.filter(p=>p.unit===k).sort((a,b)=>(a.createdAt||0)-(b.createdAt||0));
-const sumOf = k => S.sums[k] || null;
-function statusOf(k){ const s=sumOf(k); if(s&&s.status==="done") return "done"; if(s&&s.content) return "draft"; return unitPosts(k).length?"coll":"wait"; }
 const SECS=[["s1","2026 운영 성과","올해 운영하며 거둔 성과, 잘된 점"],["s2","개선점 및 재구상 방향","보완할 점과 2027학년도 운영 방향"],["s3","기타 및 건의사항","그 밖의 의견, 학교에 건의할 내용"]];
-const hasSecs=x=>!!x&&SECS.some(([k])=>typeof x[k]==="string");
-const secVals=x=> !x? ["","",""] : hasSecs(x)? SECS.map(([k])=>x[k]||"") : [x.content||"","",""];
-const composeText=x=>SECS.map(([k,l],i)=>`${i+1}. ${l}\n${(x[k]||"").trim()||"-"}`).join("\n\n");
-const textOf=x=> hasSecs(x)? composeText(x) : (x&&x.content||"");
-function secsHTML(x){ if(!hasSecs(x)) return `<div class="ct">${esc(x&&x.content||"")}</div>`;
-  return `<div class="secs">${SECS.map(([k,l],i)=>`<div class="sec"><div class="sl">${i+1}. ${l}</div><div class="ct">${(x[k]||"").trim()?esc(x[k]):'<span class="muted">-</span>'}</div></div>`).join("")}</div>`; }
-function setW(v){ SECS.forEach(([k],i)=>{ const el=$("w"+k); if(el) el.value=v[i]||""; }); }
 const STATUS_LABEL={done:"완료",draft:"취합 중",coll:"답변 수집 중",wait:"대기"};
-const curRound = () => S.rounds.find(r=>r.id===S.roundId)||null;
 
-/* ---------- rounds ---------- */
+const S={rounds:[],allPosts:[],allSums:[],roundId:null,posts:[],sums:{},unit:"gyomu",mode:"write",
+  editingId:null,sumDirty:false,loaded:false,online:false,isAdmin:false,admin:"",busy:false,sig:""};
+
+const $=id=>document.getElementById(id);
+const esc=s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const fmt=t=>{ if(!t) return ""; const d=new Date(Number(t)||t); if(isNaN(d)) return ""; const p=n=>String(n).padStart(2,"0"); return `${d.getMonth()+1}/${d.getDate()} ${p(d.getHours())}:${p(d.getMinutes())}`; };
+const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(k,v){try{localStorage.setItem(k,v)}catch(e){}}, del(k){try{localStorage.removeItem(k)}catch(e){}}};
+let toastT; function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2800);}
+
+const hasSecs=x=>!!x&&SECS.some(([k])=>typeof x[k]==="string"&&x[k]!=="");
+const secVals=x=> !x? ["","",""] : (hasSecs(x)||!x.content)? SECS.map(([k])=>String(x[k]??"")) : [x.content,"",""];
+const composeText=x=>SECS.map(([k,l],i)=>`${i+1}. ${l}\n${(x[k]||"").trim()||"-"}`).join("\n\n");
+const textOf=x=>{ const v=secVals(x); return composeText({s1:v[0],s2:v[1],s3:v[2]}); };
+function secsHTML(x){ const v=secVals(x);
+  return `<div class="secs">${SECS.map(([k,l],i)=>`<div class="sec"><div class="sl">${i+1}. ${l}</div><div class="ct">${v[i].trim()?esc(v[i]):'<span class="muted">-</span>'}</div></div>`).join("")}</div>`; }
+function setW(v){ SECS.forEach(([k],i)=>{ const el=$("w"+k); if(el) el.value=v[i]||""; }); }
+
+/* ---------- 서버 통신 ---------- */
+const configured=/^https:\/\/script\.google(usercontent)?\.com\//.test(API_URL);
+const clientKey=(()=>{ let k=ls.get("hy.key"); if(!k){ k=(crypto.randomUUID?crypto.randomUUID():Date.now()+"-"+Math.random().toString(36).slice(2)); ls.set("hy.key",k);} return k; })();
+const ERR={forbidden:"권한이 없습니다.",locked:"이미 완료 제출되어 답변을 고칠 수 없습니다.",not_found:"자료를 찾지 못했습니다. 새로고침해 주세요.",bad_request:"입력값을 확인해 주세요.",busy:"사용자가 많습니다. 잠시 후 다시 눌러 주세요."};
+async function apiGet(params){
+  const u=new URL(API_URL); Object.entries(params).forEach(([k,v])=>u.searchParams.set(k,v));
+  const r=await fetch(u.toString()); const j=await r.json(); if(!j.ok) throw new Error(j.error||"error"); return j;
+}
+async function apiPost(body){
+  const r=await fetch(API_URL,{method:"POST",headers:{"Content-Type":"text/plain;charset=utf-8"},body:JSON.stringify({...body,key:clientKey,admin:S.admin})});
+  const j=await r.json(); if(!j.ok) throw new Error(j.error||"error"); return j;
+}
+function fail(e){ const c=e&&e.message; toast(ERR[c]||"저장하지 못했습니다. 인터넷 연결을 확인하고 다시 눌러 주세요."); }
+async function run(fn){ S.busy=true; try{ await fn(); await load(true,true); } catch(e){ fail(e); } finally{ S.busy=false; } }
+
+async function load(quiet,force){
+  if(!configured){ S.loaded=true; renderRounds(); mountMain(); return; }
+  try{
+    const j=await apiGet({action:"load",key:clientKey});
+    const sig=JSON.stringify([j.rounds,j.posts,j.summaries]);
+    const changed = force || sig!==S.sig; S.sig=sig; S.online=true;
+    S.rounds=(j.rounds||[]).map(r=>({...r,due:normDate(r.due)})).sort((a,b)=>(Number(b.createdAt)||0)-(Number(a.createdAt)||0));
+    S.allPosts=j.posts||[]; S.allSums=j.summaries||[];
+    if(!S.rounds.find(r=>r.id===S.roundId)){ const saved=ls.get("hy.round"); S.roundId=S.rounds.find(r=>r.id===saved)?saved:(S.rounds[0]?.id||null); S.sumDirty=false; S.editingId=null; if(S.loaded) force=true; }
+    applyRound();
+    if(!S.loaded){ S.loaded=true; renderRounds(); renderUnits(); mountMain(); }
+    else if(changed||force){ renderRounds(); renderUnits(); force&&!S.roundId? mountMain() : refreshMain(); }
+  }catch(e){
+    const wasOnline=S.online; S.online=false;
+    if(!S.loaded){ S.loaded=true; renderRounds(); renderUnits(); mountMain(); }
+    else if(wasOnline && !quiet) toast("서버에 연결하지 못했습니다.");
+  }
+}
+function normDate(v){ if(!v) return ""; const s=String(v); if(/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0,10); const d=new Date(s); return isNaN(d)?"":`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`; }
+function applyRound(){
+  S.posts=S.allPosts.filter(p=>p.roundId===S.roundId);
+  const m={}; S.allSums.filter(s=>s.roundId===S.roundId).forEach(s=>m[s.unit]=s); S.sums=m;
+}
+
+const unitPosts=k=>S.posts.filter(p=>p.unit===k).sort((a,b)=>(Number(a.createdAt)||0)-(Number(b.createdAt)||0));
+const sumOf=k=>S.sums[k]||null;
+function statusOf(k){ const s=sumOf(k); if(s&&s.status==="done") return "done"; if(s&&secVals(s).some(x=>x.trim())) return "draft"; return unitPosts(k).length?"coll":"wait"; }
+const curRound=()=>S.rounds.find(r=>r.id===S.roundId)||null;
+
+/* ---------- 관리자 ---------- */
+function renderAdmin(){
+  $("btnAdmin").textContent = S.isAdmin? "관리자 나가기" : "관리자";
+  $("btnNewRound").hidden=!S.isAdmin; $("btnEditRound").hidden=!(S.isAdmin&&curRound()); $("btnDelRound").hidden=!(S.isAdmin&&curRound());
+}
+$("btnAdmin").onclick=()=>{
+  if(S.isAdmin){ S.isAdmin=false; S.admin=""; ls.del("hy.admin"); renderAdmin(); refreshMain(); toast("관리자 모드를 껐습니다."); return; }
+  $("adminForm").hidden=!$("adminForm").hidden; if(!$("adminForm").hidden) $("adPw").focus();
+};
+$("adCancel").onclick=()=>{ $("adminForm").hidden=true; };
+$("adminForm").addEventListener("submit",async e=>{
+  e.preventDefault(); const pw=$("adPw").value; if(!pw) return; S.admin=pw; $("adOk").disabled=true;
+  try{ await apiPost({action:"checkAdmin"}); S.isAdmin=true; ls.set("hy.admin",pw); $("adminForm").hidden=true; $("adPw").value=""; renderAdmin(); refreshMain(); toast("관리자 모드입니다. 회차를 만들고 고칠 수 있습니다."); }
+  catch(err){ S.admin=""; toast(err.message==="forbidden"?"비밀번호가 맞지 않습니다.":"서버에 연결하지 못했습니다."); }
+  $("adOk").disabled=false;
+});
+
+/* ---------- 회차 ---------- */
 function renderRounds(){
   const sel=$("roundSel");
   if(!S.rounds.length){ sel.innerHTML=`<option>열린 회차 없음</option>`; sel.disabled=true; }
   else{ sel.disabled=false; sel.innerHTML=S.rounds.map(r=>`<option value="${esc(r.id)}"${r.id===S.roundId?" selected":""}>${esc(r.title)}</option>`).join(""); }
   const r=curRound();
   $("roundDue").textContent = r&&r.due ? `마감 ${r.due.slice(5).replace("-","/")}` : "";
-  $("roundDesc").textContent = r ? (r.desc||"") : (S.isAdmin?"새 회차를 열면 선생님들이 답변을 올릴 수 있습니다.":"아직 열린 협의 회차가 없습니다.");
+  $("roundDesc").textContent = r ? (r.desc||"") : "";
   $("roundDesc").hidden = !$("roundDesc").textContent;
-  $("btnNewRound").hidden=!S.isAdmin; $("btnEditRound").hidden=!(S.isAdmin&&r);
+  renderAdmin();
 }
 let roundEditMode=null;
 function openRoundForm(mode){
@@ -247,35 +318,29 @@ function openRoundForm(mode){
 $("btnNewRound").onclick=()=>openRoundForm("new");
 $("btnEditRound").onclick=()=>openRoundForm("edit");
 $("rfCancel").onclick=()=>{$("roundForm").hidden=true;};
-$("roundForm").addEventListener("submit",async e=>{
+$("btnDelRound").onclick=e=>{
+  const b=e.currentTarget, r=curRound(); if(!r) return;
+  if(b.dataset.armed!=="1"){ b.dataset.armed="1"; b.textContent="답변까지 모두 삭제?"; b.style.color="var(--seal)"; setTimeout(()=>{ if(b.isConnected){b.dataset.armed="";b.textContent="회차 삭제";b.style.color="";} },3500); return; }
+  b.dataset.armed=""; b.textContent="회차 삭제"; b.style.color="";
+  run(async()=>{ await apiPost({action:"deleteRound",id:r.id}); toast(`'${r.title}' 회차를 삭제했습니다.`); });
+};
+$("roundForm").addEventListener("submit",e=>{
   e.preventDefault(); const title=$("rfTitle").value.trim(); if(!title) return;
   const body={title,due:$("rfDue").value,desc:$("rfDesc").value.trim()};
   $("rfSave").disabled=true;
-  try{
-    if(roundEditMode==="edit"&&S.roundId){ await S.db.doc("rounds/"+S.roundId).update(body); toast("회차 정보를 고쳤습니다."); }
-    else { const id="r"+Date.now(); await S.db.doc("rounds/"+id).set({...body,createdAt:Date.now()}); selectRound(id); toast("새 회차를 열었습니다."); }
+  run(async()=>{
+    if(roundEditMode==="edit"&&S.roundId){ await apiPost({action:"saveRound",id:S.roundId,...body}); toast("회차 정보를 고쳤습니다."); }
+    else { const j=await apiPost({action:"saveRound",...body}); S.roundId=j.id; ls.set("hy.round",j.id); toast("새 회차를 열었습니다."); }
     $("roundForm").hidden=true;
-  }catch(err){ toast(err&&err.code==="invalid_argument"?"회차는 편집자(Editor) 이상만 만들 수 있습니다.":"저장하지 못했습니다."); }
-  $("rfSave").disabled=false;
+  }).finally(()=>{$("rfSave").disabled=false;});
 });
 $("roundSel").onchange=e=>selectRound(e.target.value);
-
 function selectRound(id){
-  if(S.roundId===id&&S.unsub.length) return;
-  S.roundId=id; ls.set("hy.round",id); S.posts=[]; S.sums={}; S.sumDirty=false; S.editingId=null;
-  S.unsub.forEach(f=>f()); S.unsub=[];
-  renderRounds();
-  if(!id){ renderUnits(); mountMain(); return; }
-  S.unsub.push(S.db.collection("posts").where("roundId","==",id).onSnapshot(snap=>{
-    S.posts=snap.docs.map(d=>({id:d.id,...d.data()})); renderUnits(); refreshMain();
-  },()=>{}));
-  S.unsub.push(S.db.collection("summaries").where("roundId","==",id).onSnapshot(snap=>{
-    const m={}; snap.docs.forEach(d=>{const x=d.data(); m[x.unit]=x;}); S.sums=m; renderUnits(); refreshMain();
-  },()=>{}));
-  renderUnits(); mountMain();
+  S.roundId=id; ls.set("hy.round",id); S.sumDirty=false; S.editingId=null;
+  applyRound(); renderRounds(); renderUnits(); mountMain();
 }
 
-/* ---------- unit nav ---------- */
+/* ---------- 부서·학년 목록 ---------- */
 function renderUnits(){
   const grp=(kind,label)=>`<div class="ugroup"><span class="eyebrow">${label}</span>${UNITS.filter(u=>u.kind===kind).map(u=>{
     const st=statusOf(u.key), n=unitPosts(u.key).length;
@@ -287,31 +352,33 @@ function renderUnits(){
 }
 $("units").addEventListener("click",e=>{const b=e.target.closest("[data-unit]"); if(!b) return; selectUnit(b.dataset.unit);});
 function selectUnit(k){ if(S.unit!==k){S.unit=k; ls.set("hy.unit",k); S.sumDirty=false; S.editingId=null;} renderUnits(); mountMain(); }
-
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
   S.mode=b.dataset.mode; ls.set("hy.mode",S.mode);
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",x===b));
   S.sumDirty=false; renderUnits(); mountMain();
 });
 
-/* ---------- main panel ---------- */
+/* ---------- 본문 ---------- */
 function permNote(){
-  if(S.canWrite===false) return `<div class="notice warn">이 화면은 보기 전용입니다. 글을 올리려면 공유 설정에서 '참여자(Contributor)' 이상 권한을 받아야 합니다.</div>`;
-  if(!S.db) return `<div class="notice warn" style="display:flex;flex-wrap:wrap;gap:10px;align-items:center"><span style="flex:1;min-width:200px" id="enableMsg">저장 기능이 꺼져 있습니다. 버튼을 눌러 저장 기능을 허용해 주세요.</span><button class="primary" type="button" data-enable-db>저장 기능 켜기</button></div>`;
+  if(!configured) return `<div class="notice warn">아직 저장소(구글 시트) 주소가 설정되지 않았습니다. 관리자는 index.html 맨 아래 스크립트의 <b>API_URL</b>에 Apps Script 웹 앱 주소를 넣어 주세요.</div>`;
+  if(!S.online) return `<div class="notice warn">저장소에 연결하지 못했습니다. 인터넷 연결을 확인하고 새로고침해 주세요.</div>`;
   return "";
 }
+const readOnly=()=>!configured||!S.online;
 function mountMain(){
   const P=$("panel");
-  if(!S.loaded){ return; }
-  if(!S.roundId){ P.innerHTML=`${permNote()}<div class="empty">${S.isAdmin?"위의 <b>새 회차 열기</b>로 협의 안건을 등록하면 시작할 수 있습니다.":"교육과정부에서 협의 회차를 열면 이곳에 답변을 올릴 수 있습니다."}</div>`; return; }
+  if(!S.loaded) return;
+  if(!S.roundId){ P.dataset.ctx=""; P.innerHTML=`${permNote()}<div class="empty">${S.online?(S.isAdmin?"위의 <b>새 회차 열기</b>로 협의 안건을 등록하면 시작할 수 있습니다.":"교육과정부에서 협의 회차를 열면 이곳에 답변을 올릴 수 있습니다."):"저장소에 연결되면 협의 회차와 답변이 이곳에 표시됩니다."}</div>`; return; }
+  P.dataset.ctx=`${S.mode}|${S.roundId}|${S.unit}`;
   if(S.mode==="write") mountWrite(P); else if(S.mode==="head") mountHead(P); else mountBoard(P);
 }
 function refreshMain(){
-  if(!S.roundId) return;
+  const ctx=`${S.mode}|${S.roundId}|${S.unit}`;
+  if(!S.roundId || $("panel").dataset.ctx!==ctx){ mountMain(); return; }
   if(S.mode==="write") refreshWrite(); else if(S.mode==="head") refreshHead(); else mountBoard($("panel"));
 }
 
-/* write */
+/* 답변 작성 */
 function mountWrite(P){
   const u=U[S.unit];
   P.innerHTML=`
@@ -322,7 +389,7 @@ function mountWrite(P){
     <form class="form" id="wForm">
       <div class="grid2">
         <label>작성자<select id="wName"><option value="">이름을 고르세요</option>${u.roster.map(([n,t],i)=>`<option value="${i}">${esc(n)} · ${esc(t)}</option>`).join("")}<option value="other">명단에 없음(직접 입력)</option></select></label>
-        <label>담당 업무 / 반<input id="wTask" maxlength="40" placeholder="예: 체험학습, 6-3 담임"></label>
+        <label>담당 업무 / 반<input id="wTask" maxlength="60" placeholder="예: 체험학습, 6-3 담임"></label>
       </div>
       <label id="wOtherWrap" hidden>이름<input id="wOther" maxlength="20"></label>
       <div class="secform"><span class="eyebrow">협의 내용</span>
@@ -349,46 +416,46 @@ function refreshWrite(){
   if(!$("wPosts")) return;
   const done=statusOf(S.unit)==="done", s=sumOf(S.unit);
   $("lockNote").innerHTML = done?`<div class="notice lock">${fmt(s.submittedAt)}에 완료 제출되었습니다 (취합: ${esc(headTitle(U[S.unit]))}). 추가 의견은 취합 담당자께 직접 전해 주세요.</div>`:"";
-  const ro = done || S.canWrite===false || !S.db;
+  const ro = done || readOnly();
   ["wName","wTask","wOther","ws1","ws2","ws3","wSubmit"].forEach(id=>$(id).disabled=ro);
   const list=unitPosts(S.unit);
   $("wCount").textContent=list.length?`${list.length}건`:"";
   $("wPosts").innerHTML = list.length? list.map(p=>postHTML(p,!done)).join("") : `<div class="empty">아직 올라온 답변이 없습니다. 첫 답변을 올려 주세요.</div>`;
 }
 function postHTML(p,editable,extra=""){
-  const mine = editable && S.uid && p.uid===S.uid;
-  return `<div class="post" data-id="${esc(p.id)}"><div class="meta"><span class="nm">${esc(p.name)}</span>${p.task?`<span class="tk">${esc(p.task)}</span>`:""}<span class="tm">${fmt(p.updatedAt||p.createdAt)}${p.updatedAt&&p.updatedAt!==p.createdAt?" 수정":""}</span>
-    <span class="ops">${extra}${mine?`<button class="ghost" data-op="edit">수정</button><button class="ghost" data-op="del">삭제</button>`:""}</span></div>
+  const canEdit = editable && p.mine, canDel = editable && (p.mine || S.isAdmin);
+  const edited = p.updatedAt && String(p.updatedAt)!==String(p.createdAt);
+  return `<div class="post" data-id="${esc(p.id)}"><div class="meta"><span class="nm">${esc(p.name)}</span>${p.task?`<span class="tk">${esc(p.task)}</span>`:""}<span class="tm">${fmt(p.updatedAt||p.createdAt)}${edited?" 수정":""}</span>
+    <span class="ops">${extra}${canEdit?`<button class="ghost" data-op="edit">수정</button>`:""}${canDel?`<button class="ghost" data-op="del">삭제</button>`:""}</span></div>
     ${secsHTML(p)}</div>`;
 }
-async function submitPost(e){
+function submitPost(e){
   e.preventDefault(); const u=U[S.unit]; const v=$("wName").value;
-  let name = v==="other"? $("wOther").value.trim() : (v!==""? u.roster[+v][0] : "");
+  const name = v==="other"? $("wOther").value.trim() : (v!==""? u.roster[+v][0] : "");
   const task=$("wTask").value.trim();
   const sec={s1:$("ws1").value.trim(),s2:$("ws2").value.trim(),s3:$("ws3").value.trim()};
-  if(!name){toast("작성자 이름을 골라 주세요.");return;} if(!sec.s1&&!sec.s2&&!sec.s3){toast("협의 내용을 한 항목 이상 적어 주세요.");return;}
-  const content=composeText(sec);
+  if(!name){toast("작성자 이름을 골라 주세요.");return;}
+  if(!sec.s1&&!sec.s2&&!sec.s3){toast("협의 내용을 한 항목 이상 적어 주세요.");return;}
   $("wSubmit").disabled=true;
-  try{
-    const now=Date.now();
-    if(S.editingId){ await S.db.doc("posts/"+S.editingId).update({name,task,...sec,content,updatedAt:now}); toast("답변을 고쳤습니다."); }
-    else { await S.db.collection("posts").add({roundId:S.roundId,unit:S.unit,name,task,...sec,content,uid:S.uid,createdAt:now,updatedAt:now}); toast("답변을 제출했습니다."); }
+  const editing=S.editingId;
+  run(async()=>{
+    await apiPost(editing? {action:"updatePost",id:editing,name,task,...sec} : {action:"addPost",roundId:S.roundId,unit:S.unit,name,task,...sec});
+    toast(editing?"답변을 고쳤습니다.":"답변을 제출했습니다.");
     S.editingId=null; setW(["","",""]); $("wEditing").textContent=""; $("wCancel").hidden=true; $("wSubmit").textContent="제출";
-  }catch(err){fail(err);}
-  $("wSubmit").disabled=false;
+  }).finally(()=>{ if($("wSubmit")) $("wSubmit").disabled = statusOf(S.unit)==="done"||readOnly(); });
 }
-async function postOps(e){
+function postOps(e){
   const b=e.target.closest("[data-op]"); if(!b) return; const id=b.closest(".post").dataset.id; const p=S.posts.find(x=>x.id===id); if(!p) return;
   if(b.dataset.op==="edit"){
     S.editingId=id; setW(secVals(p)); $("wTask").value=p.task||"";
     $("wEditing").textContent=`${p.name} 님의 답변을 고치는 중`; $("wCancel").hidden=false; $("wSubmit").textContent="수정 저장"; $("ws1").focus();
   } else if(b.dataset.op==="del"){
     if(b.dataset.armed!=="1"){ b.dataset.armed="1"; b.textContent="삭제 확인"; b.style.color="var(--seal)"; setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="삭제";b.style.color="";}},3000); return; }
-    try{ await S.db.doc("posts/"+id).delete(); toast("답변을 삭제했습니다."); }catch(err){fail(err);}
+    run(async()=>{ await apiPost({action:"deletePost",id}); toast("답변을 삭제했습니다."); });
   }
 }
 
-/* head */
+/* 부장 취합 */
 function mountHead(P){
   const u=U[S.unit];
   P.innerHTML=`
@@ -402,7 +469,7 @@ function mountHead(P){
     <div class="form">
       <div class="phead" style="align-items:center"><h3>${u.name} 협의 결과</h3><button id="hFill" type="button">답변 전체 불러오기</button></div>
       <p class="muted" style="margin:0;font-size:.85rem">‘답변 전체 불러오기’를 누르면 선생님들의 답변이 항목별로 모입니다. 초안을 다듬어 저장하세요.</p>
-      ${SECS.map(([k,l],i)=>`<label class="seclabel">${i+1}. ${l}<textarea id="h${k}" class="htext" style="min-height:150px"></textarea></label>`).join("")}
+      ${SECS.map(([k,l],i)=>`<label class="seclabel">${i+1}. ${l}<textarea id="h${k}" style="min-height:150px"></textarea></label>`).join("")}
       <div class="actions"><span class="muted" id="hSaved" style="margin-right:auto;font-size:.85rem"></span>
         <button type="button" id="hReopen" hidden>완료 취소</button>
         <button type="button" id="hDraft">임시 저장</button>
@@ -413,14 +480,13 @@ function mountHead(P){
   const appendPosts=list=>SECS.forEach(([k],i)=>{
     const t=list.map(p=>{const v=secVals(p)[i].trim(); return v?`■ ${p.name}${p.task?` (${p.task})`:""}\n${v}`:"";}).filter(Boolean).join("\n\n");
     if(!t) return; const el=$("h"+k), cur=el.value.trim(); el.value = cur? cur+"\n\n"+t : t; });
-  $("hFill").onclick=()=>{ const list=unitPosts(S.unit); if(!list.length){toast("불러올 답변이 없습니다.");return;}
-    appendPosts(list); dirty(); };
+  $("hFill").onclick=()=>{ const list=unitPosts(S.unit); if(!list.length){toast("불러올 답변이 없습니다.");return;} appendPosts(list); dirty(); };
   $("hPosts").addEventListener("click",e=>{const b=e.target.closest("[data-op='add']"); if(!b) return; const p=S.posts.find(x=>x.id===b.closest(".post").dataset.id); if(!p) return;
     appendPosts([p]); dirty(); toast(`${p.name} 님 답변을 항목별로 넣었습니다.`);});
   $("hDraft").onclick=()=>saveSum("draft");
   $("hDone").onclick=e=>{ const b=e.currentTarget; if(!SECS.some(([k])=>$("h"+k).value.trim())){toast("협의 결과를 먼저 작성해 주세요.");return;}
     if(b.dataset.armed!=="1"){b.dataset.armed="1"; b.textContent="정말 완료 제출"; setTimeout(()=>{if(b.isConnected){b.dataset.armed="";b.textContent="완료 제출";}},3500); return;}
-    b.dataset.armed=""; saveSum("done"); };
+    b.dataset.armed=""; b.textContent="완료 제출"; saveSum("done"); };
   $("hReopen").onclick=()=>saveSum("draft",true);
   refreshHead();
 }
@@ -434,23 +500,23 @@ function refreshHead(){
   $("hMissing").innerHTML = miss.length? `<span class="muted" style="font-size:.8rem">아직 답변 없음</span>`+miss.map(n=>`<span class="chip">${esc(n)}</span>`).join("") : `<span class="chip" style="color:var(--ok);border-color:var(--ok)">명단 전원 답변 완료</span>`;
   $("hPosts").innerHTML = list.length? list.map(p=>postHTML(p,false, done?"":`<button class="ghost" data-op="add">결과에 넣기</button>`)).join("") : `<div class="empty">아직 올라온 답변이 없습니다.</div>`;
   if(!S.sumDirty){ const v=secVals(s); SECS.forEach(([k],i)=>$("h"+k).value=v[i]); $("hSaved").textContent = s&&s.updatedAt? `${fmt(s.updatedAt)} 저장됨`:""; }
-  const ro = S.canWrite===false || !S.db;
-  SECS.forEach(([k])=>$("h"+k).readOnly = done || ro); $("hFill").disabled=done||ro; $("hDraft").disabled=done||ro; $("hDone").disabled=done||ro;
+  const ro=readOnly();
+  SECS.forEach(([k])=>$("h"+k).readOnly = done || ro);
+  $("hFill").disabled=done||ro; $("hDraft").disabled=done||ro; $("hDone").disabled=done||ro;
   $("hDraft").hidden=done; $("hDone").hidden=done; $("hReopen").hidden=!done; $("hReopen").disabled=ro;
 }
-async function saveSum(status,reopen=false){
-  const u=U[S.unit], prev=sumOf(S.unit)||{};
+function saveSum(status,reopen=false){
+  const u=U[S.unit], prev=sumOf(S.unit);
   const v = reopen? secVals(prev) : SECS.map(([k])=>$("h"+k).value.trim());
-  const sec={s1:v[0],s2:v[1],s3:v[2]}, content=composeText(sec);
-  const now=Date.now();
-  const body={roundId:S.roundId,unit:S.unit,...sec,content,status,head:u.head,uid:S.uid,updatedAt:now,
-    submittedAt: status==="done"? now : null};
-  try{ await S.db.doc(`summaries/${S.roundId}__${S.unit}`).set(body); S.sumDirty=false;
-    toast(status==="done"?`${u.name} 협의 결과를 완료 제출했습니다.`: reopen?"완료를 취소했습니다. 다시 고칠 수 있습니다.":"임시 저장했습니다."); refreshHead(); }
-  catch(err){fail(err);}
+  ["hDraft","hDone","hReopen"].forEach(id=>$(id)&&($(id).disabled=true));
+  run(async()=>{
+    await apiPost({action:"saveSummary",roundId:S.roundId,unit:S.unit,s1:v[0],s2:v[1],s3:v[2],status,head:u.head});
+    S.sumDirty=false;
+    toast(status==="done"?`${u.name} 협의 결과를 완료 제출했습니다.`: reopen?"완료를 취소했습니다. 다시 고칠 수 있습니다.":"임시 저장했습니다.");
+  }).finally(()=>refreshHead());
 }
 
-/* board */
+/* 종합 현황 */
 function compileText(){
   const r=curRound(); let out=`[${r?r.title:""}] 부서·학년 협의 결과\n`;
   UNITS.forEach(u=>{ const s=sumOf(u.key); out+=`\n━━ ${u.name} (${headTitle(u)}) — ${STATUS_LABEL[statusOf(u.key)]}\n`;
@@ -459,6 +525,7 @@ function compileText(){
 }
 const csvCell=v=>`"${String(v??"").replace(/"/g,'""')}"`;
 function mountBoard(P){
+  const open=new Set([...P.querySelectorAll("details[open]")].map(d=>d.dataset.k));
   const counts={done:0,draft:0,coll:0,wait:0}; UNITS.forEach(u=>counts[statusOf(u.key)]++);
   const cell=u=>{const st=statusOf(u.key), n=unitPosts(u.key).length, names=new Set(unitPosts(u.key).map(p=>p.name)).size;
     return `<button class="cell" data-goto="${u.key}"><span class="n">${u.name}</span><span class="h">${esc(headTitle(u))}</span>
@@ -468,73 +535,45 @@ function mountBoard(P){
     return `<article><div class="t"><h3>${u.name}</h3><span class="muted" style="font-size:.85rem">${esc(headTitle(u))}</span>
       <span class="pill ${st}" style="margin:0">${STATUS_LABEL[st]}${st==="done"?" · "+fmt(s.submittedAt):""}</span></div>
       ${st==="done"?`<div class="body">${secsHTML(s)}</div>`:`<div class="muted" style="font-size:.9rem">부장 완료 제출 전입니다.${st==="draft"?" (취합 초안 작성 중)":""}</div>`}
-      ${list.length?`<details><summary>원답변 ${list.length}건 보기</summary><div class="posts">${list.map(p=>postHTML(p,false)).join("")}</div></details>`:""}</article>`;};
+      ${list.length?`<details data-k="${u.key}"${open.has(u.key)?" open":""}><summary>원답변 ${list.length}건 보기</summary><div class="posts">${list.map(p=>postHTML(p,false)).join("")}</div></details>`:""}</article>`;};
   P.innerHTML=`
     <div class="phead"><div><div class="eyebrow">교육과정부 종합</div><h2>${esc(curRound()?.title||"")} 취합 현황</h2></div>
       <div class="actions"><button id="bCopy">완료분 전체 복사</button><button id="bCsv">CSV 내려받기</button></div></div>
+    ${permNote()}
     <div class="sumline"><span><b style="color:var(--seal)">${counts.done}</b>/${UNITS.length} 완료</span><span><b>${counts.draft}</b>취합 중</span><span><b>${counts.coll}</b>답변 수집 중</span><span class="muted"><b>${counts.wait}</b>대기</span></div>
     <div><div class="eyebrow" style="margin-bottom:6px">업무(기능) 부서</div><div class="board dept">${UNITS.filter(u=>u.kind==="dept").map(cell).join("")}</div></div>
     <div><div class="eyebrow" style="margin-bottom:6px">학년</div><div class="board">${UNITS.filter(u=>u.kind==="grade").map(cell).join("")}</div></div>
     <div class="doc">${UNITS.map(art).join("")}</div>`;
-  P.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{ S.unit=b.dataset.goto; ls.set("hy.unit",S.unit); document.getElementById("tab-head").click(); });
+  P.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{ S.unit=b.dataset.goto; ls.set("hy.unit",S.unit); $("tab-head").click(); });
   $("bCopy").onclick=async()=>{ const t=compileText(); try{await navigator.clipboard.writeText(t); toast("복사했습니다. 한글·워드에 붙여 넣으세요.");}
     catch(e){ const ta=document.createElement("textarea"); ta.value=t; ta.style.minHeight="200px"; P.appendChild(ta); ta.select(); toast("자동 복사가 막혀 아래에 텍스트를 펼쳤습니다. Ctrl+C로 복사하세요."); } };
-  $("bCsv").onclick=async()=>{
+  $("bCsv").onclick=()=>{
     const L=SECS.map(([,l],i)=>`${i+1}. ${l}`);
     const rows=[["구분","부서/학년","취합 부장","상태","완료 제출 시각",...L.map(x=>"[결과] "+x),"작성자","담당 업무",...L.map(x=>"[답변] "+x),"답변 시각"]];
     UNITS.forEach(u=>{ const s=sumOf(u.key), st=STATUS_LABEL[statusOf(u.key)], list=unitPosts(u.key), isDone=s&&s.status==="done";
-      const base=[u.kind==="dept"?"부서":"학년",u.name,u.head,st,isDone?new Date(s.submittedAt).toLocaleString("ko-KR"):"",...(isDone?secVals(s):["","",""])];
+      const base=[u.kind==="dept"?"부서":"학년",u.name,u.head,st,isDone?new Date(Number(s.submittedAt)).toLocaleString("ko-KR"):"",...(isDone?secVals(s):["","",""])];
       const blank=[base[0],base[1],"","","","","",""];
       if(!list.length) rows.push([...base,"","","","","",""]);
-      list.forEach((p,i)=>rows.push([...(i===0?base:blank),p.name,p.task||"",...secVals(p),new Date(p.createdAt).toLocaleString("ko-KR")])); });
+      list.forEach((p,i)=>rows.push([...(i===0?base:blank),p.name,p.task||"",...secVals(p),new Date(Number(p.createdAt)).toLocaleString("ko-KR")])); });
     const csv="﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
-    const dl = window.claude ? await claude.use("downloads") : null;
-    if(!dl){toast("이 화면에서는 내려받기를 쓸 수 없습니다. ‘전체 복사’를 이용해 주세요.");return;}
-    try{ await dl.save({filename:`협의취합_${(curRound()?.title||"회차").replace(/[\\/:*?"<>|]/g,"")}.csv`,data:csv}); toast("CSV 파일을 저장했습니다."); }
-    catch(e){ if(e&&e.code!=="declined") toast("내려받기를 하지 못했습니다."); }
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
+    a.download=`협의취합_${(curRound()?.title||"회차").replace(/[\\/:*?"<>|]/g,"")}.csv`; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(a.href),2000); toast("CSV 파일을 내려받았습니다.");
   };
 }
 
-/* ---------- enable storage ---------- */
-document.addEventListener("click",async e=>{
-  const b=e.target.closest("[data-enable-db]"); if(!b) return;
-  const msg=$("enableMsg"); const say=t=>{ if(msg) msg.textContent=t; else toast(t); };
-  const perms = window.claude&&claude.use ? await claude.use("permissions") : null;
-  if(!perms){ say("이 화면에서는 저장 기능을 쓸 수 없습니다. claude.ai 웹에서 로그인한 뒤 이 링크를 열어 주세요."); return; }
-  b.disabled=true;
-  let st=await perms.state("db");
-  if(st==="prompt"){ const r=await perms.request(["db","user","downloads"]); st=r.db; }
-  else if(st==="denied"){ try{ await perms.manage(); }catch(err){ say("오른쪽 위 메뉴의 ‘권한(Permissions)’에서 저장 기능을 켜 주세요."); b.disabled=false; return; } st=await perms.state("db"); }
-  if(st==="granted"){ say("저장 기능을 켰습니다. 페이지를 다시 불러옵니다."); setTimeout(()=>location.reload(),600); }
-  else if(st==="unavailable"){ say("이 화면에서는 저장 기능을 쓸 수 없습니다. claude.ai 웹에서 로그인한 뒤 이 링크를 열어 주세요."); }
-  else { say("아직 허용되지 않았습니다. 오른쪽 위 메뉴의 ‘권한(Permissions)’에서 저장 기능을 켜 주세요."); b.disabled=false; }
-});
-
-/* ---------- boot ---------- */
-(async function boot(){
-  S.mode = ["write","head","board"].includes(ls.get("hy.mode"))? ls.get("hy.mode") : "write";
-  S.unit = U[ls.get("hy.unit")]? ls.get("hy.unit") : "gyomu";
+/* ---------- 시작 ---------- */
+(function boot(){
+  S.mode=["write","head","board"].includes(ls.get("hy.mode"))? ls.get("hy.mode") : "write";
+  S.unit=U[ls.get("hy.unit")]? ls.get("hy.unit") : "gyomu";
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.mode===S.mode));
+  const pw=ls.get("hy.admin");
   renderUnits();
-  const use = window.claude && claude.use ? claude.use.bind(claude) : null;
-  if(use){ try{ const perms=await use("permissions");
-    if(perms){ const st=await perms.state(); if(["db","user","downloads"].some(k=>st[k]==="prompt")) await perms.request(["db","user","downloads"]); }
-  }catch(e){} }
-  const [db,user] = use? await Promise.all([use("db"),use("user")]) : [null,null];
-  S.db=db; S.user=user;
-  if(user){ S.uid=await user.id(); S.isAdmin=await user.canEdit(); S.canWrite=await user.can("data.write"); }
-  S.loaded=true;
-  if(!db){ renderRounds(); $("panel").innerHTML=permNote()+`<div class="empty">저장 기능을 켜면 협의 회차와 답변이 이곳에 표시됩니다.</div>`; return; }
-  let first=true;
-  db.collection("rounds").onSnapshot(snap=>{
-    S.rounds=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-    if(first||!S.rounds.find(r=>r.id===S.roundId)){
-      first=false; const saved=ls.get("hy.round");
-      const pick = S.rounds.find(r=>r.id===saved)? saved : (S.rounds[0]?.id||null);
-      S.roundId===pick && S.unsub.length ? renderRounds() : (S.roundId=null, selectRound(pick));
-    } else { renderRounds(); }
-  },()=>{ $("panel").innerHTML=`<div class="empty">자료를 불러오지 못했습니다. 페이지를 새로 고쳐 주세요.</div>`; });
+  if(pw&&configured){ S.admin=pw; apiPost({action:"checkAdmin"}).then(()=>{S.isAdmin=true; renderAdmin(); refreshMain();}).catch(()=>{S.admin=""; ls.del("hy.admin");}); }
+  load();
+  setInterval(()=>{ if(document.visibilityState==="visible"&&!S.busy) load(true); },30000);
+  document.addEventListener("visibilitychange",()=>{ if(document.visibilityState==="visible"&&!S.busy) load(true); });
 })();
 </script>
-
-</body></html>
+</body>
+</html>
