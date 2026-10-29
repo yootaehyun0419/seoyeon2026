@@ -107,7 +107,7 @@ main.panel{background:var(--surface);border:1px solid var(--line);border-radius:
 .stamp.sm{width:44px;height:44px;font-size:.8rem;border-width:2px}
 
 .board{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:8px}
-.board.dept{grid-template-columns:repeat(9,minmax(0,1fr))}
+.board.dept{grid-template-columns:repeat(8,minmax(0,1fr))}
 .cell{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;gap:6px;min-height:104px;background:var(--surface);text-align:left;position:relative}
 .cell .n{font-weight:600;padding-right:4px;overflow-wrap:anywhere}
 .cell .h{font-size:.76rem;color:var(--muted)}
@@ -206,7 +206,6 @@ const UNITS = [
  {key:"sci",name:"과학정보부",kind:"dept",head:"전꽃님",roster:[["전꽃님","과학정보기획"],["송이슬","정보보안"],["안수연","정보화 지원"],["하명희","영재·발명·과학의 날"],["조원정","방송·정보화실관리"],["박정민","정보교육"]]},
  {key:"office",name:"행정실",kind:"dept",head:"류수민",headLabel:"류수민 행정실장",roster:[["류수민","행정실장"],["하동홍","행정과장"],["허진우","행정실"],["김동하","행정실"],["김유진","행정실"],["유간성","행정실"]]},
  {key:"neulbom",name:"늘봄(방과후, 돌봄)",kind:"dept",head:"이한진",headLabel:"이한진 늘봄전담실장",roster:[["이한진","늘봄전담실장"],["문형선","늘봄실무사"],["김정희","돌봄교실1"],["배정미","돌봄교실2"],["정진희","돌봄교실3"]]},
- {key:"kinder",name:"유치원",kind:"dept",head:"김은영",headLabel:"김은영 유치원부장",roster:[["김은영","유치원교육 기획 · 꽃잎반"],["홍유진","연구·예산·안전 · 열매반"],["윤주경","유아학비 · 새싹반"],["홍정화","방과후 운영1 · 산들1반"],["박서희","방과후 운영2 · 산들2반"],["심현아","방과후 운영3 · 산들3반"]]},
  {key:"g1",name:"1학년",kind:"grade",head:"진송미",roster:[["진송미","1-1 담임"],["송이슬","1-2 담임"],["심미정","1-3 담임"],["전소영","1-4 담임"],["황진이","1-5 담임"],["박지영","1-6 담임"],["김세미","1-7 담임"]]},
  {key:"g2",name:"2학년",kind:"grade",head:"황설주",roster:[["황설주","2-1 담임"],["조용주","2-2 담임"],["김민희","2-3 담임"],["오성린","2-4 담임"],["이선영","2-5 담임"],["한주연","2-6 담임"],["정은영","2-7 담임"]]},
  {key:"g3",name:"3학년",kind:"grade",head:"황승진",roster:[["황승진","3-1 담임"],["김춘섭","3-2 담임"],["김재현","3-3 담임"],["신수진","3-4 담임"],["김예솔","3-5 담임"],["안수연","3-6 담임"],["정국희","3-7 담임"],["박솔빈","3-8 담임"],["편세훈","3학년 과학 전담"],["윤선주","3학년 영어 전담"]]},
