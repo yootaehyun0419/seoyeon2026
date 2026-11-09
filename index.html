@@ -216,7 +216,7 @@ const UNITS = [
 const U = Object.fromEntries(UNITS.map(u=>[u.key,u]));
 const headTitle = u => u.headLabel || (u.kind==="dept" ? `${u.head} 부장` : `${u.head} 학년부장`);
 
-const SECS=[["s1","2026 교육과정 운영 성과","올해 교육과정을 운영하며 거둔 성과, 잘된 점"],["s2","2027학년도 RAS운영 방향(개선점 및 재구상)","보완할 점과 2027학년도 운영 방향"]]
+const SECS=[["s1","2026 교육과정 운영 성과","올해 교육과정을 운영하며 거둔 성과, 잘된 점"],["s2","2027학년도 RAS운영 방향(개선점 및 재구상)","보완할 점과 2027학년도 운영 방향"],["s3","기타 및 건의사항","그 밖의 의견, 학교에 건의할 내용"]]
 const EMPTY=()=>SECS.map(()=>"");
 const secObj=v=>Object.fromEntries(SECS.map(([k],i)=>[k,v[i]||""]));;
 const STATUS_LABEL={done:"완료",draft:"취합 중",coll:"답변 수집 중",wait:"대기"};
@@ -232,7 +232,7 @@ let toastT; function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;
 
 const hasSecs=x=>!!x&&SECS.some(([k])=>typeof x[k]==="string"&&x[k]!=="");
 const secVals=x=>{ if(!x) return EMPTY(); if(!hasSecs(x)&&x.content){ const v=EMPTY(); v[0]=String(x.content); return v; }
-  const v=SECS.map(([k])=>String(x[k]??"")); const extra=String(x.s3??"").trim(); if(extra) v[v.length-1]=(v[v.length-1].trim()?v[v.length-1]+"\n\n":"")+"[기타] "+extra; return v; };
+  const v=SECS.map(([k])=>String(x[k]??"")); return v; };
 const composeText=x=>SECS.map(([k,l],i)=>`${i+1}. ${l}\n${(x[k]||"").trim()||"-"}`).join("\n\n");
 const textOf=x=>composeText(secObj(secVals(x)));
 function secsHTML(x){ const v=secVals(x);
