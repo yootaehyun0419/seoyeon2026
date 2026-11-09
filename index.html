@@ -216,7 +216,9 @@ const UNITS = [
 const U = Object.fromEntries(UNITS.map(u=>[u.key,u]));
 const headTitle = u => u.headLabel || (u.kind==="dept" ? `${u.head} 부장` : `${u.head} 학년부장`);
 
-const SECS=[["s1","2026 운영 성과","올해 운영하며 거둔 성과, 잘된 점"],["s2","개선점 및 재구상 방향","보완할 점과 2027학년도 운영 방향"],["s3","기타 및 건의사항","그 밖의 의견, 학교에 건의할 내용"]];
+const SECS=[["s1","2026 교육과정 운영 성과","올해 교육과정을 운영하며 거둔 성과, 잘된 점"],["s2","2027학년도 RAS운영 방향(개선점 및 재구상)","보완할 점과 2027학년도 운영 방향"]]
+const EMPTY=()=>SECS.map(()=>"");
+const secObj=v=>Object.fromEntries(SECS.map(([k],i)=>[k,v[i]||""]));;
 const STATUS_LABEL={done:"완료",draft:"취합 중",coll:"답변 수집 중",wait:"대기"};
 
 const S={rounds:[],allPosts:[],allSums:[],roundId:null,posts:[],sums:{},unit:"gyomu",mode:"write",
@@ -229,9 +231,10 @@ const ls={get(k){try{return localStorage.getItem(k)}catch(e){return null}}, set(
 let toastT; function toast(m){const t=$("toast");t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2800);}
 
 const hasSecs=x=>!!x&&SECS.some(([k])=>typeof x[k]==="string"&&x[k]!=="");
-const secVals=x=> !x? ["","",""] : (hasSecs(x)||!x.content)? SECS.map(([k])=>String(x[k]??"")) : [x.content,"",""];
+const secVals=x=>{ if(!x) return EMPTY(); if(!hasSecs(x)&&x.content){ const v=EMPTY(); v[0]=String(x.content); return v; }
+  const v=SECS.map(([k])=>String(x[k]??"")); const extra=String(x.s3??"").trim(); if(extra) v[v.length-1]=(v[v.length-1].trim()?v[v.length-1]+"\n\n":"")+"[기타] "+extra; return v; };
 const composeText=x=>SECS.map(([k,l],i)=>`${i+1}. ${l}\n${(x[k]||"").trim()||"-"}`).join("\n\n");
-const textOf=x=>{ const v=secVals(x); return composeText({s1:v[0],s2:v[1],s3:v[2]}); };
+const textOf=x=>composeText(secObj(secVals(x)));
 function secsHTML(x){ const v=secVals(x);
   return `<div class="secs">${SECS.map(([k,l],i)=>`<div class="sec"><div class="sl">${i+1}. ${l}</div><div class="ct">${v[i].trim()?esc(v[i]):'<span class="muted">-</span>'}</div></div>`).join("")}</div>`; }
 function setW(v){ SECS.forEach(([k],i)=>{ const el=$("w"+k); if(el) el.value=v[i]||""; }); }
@@ -402,7 +405,7 @@ function mountWrite(P){
   if(saved!=null&&$("wName").querySelector(`option[value="${saved}"]`)){ $("wName").value=saved; syncTask(); }
   $("wName").onchange=()=>{ls.set("hy.name."+S.unit,$("wName").value); syncTask();};
   $("wForm").addEventListener("submit",submitPost);
-  $("wCancel").onclick=()=>{S.editingId=null; setW(["","",""]); $("wEditing").textContent=""; $("wCancel").hidden=true; $("wSubmit").textContent="제출";};
+  $("wCancel").onclick=()=>{S.editingId=null; setW(EMPTY()); $("wEditing").textContent=""; $("wCancel").hidden=true; $("wSubmit").textContent="제출";};
   $("wPosts").addEventListener("click",postOps);
   refreshWrite();
 }
@@ -416,7 +419,7 @@ function refreshWrite(){
   const done=statusOf(S.unit)==="done", s=sumOf(S.unit);
   $("lockNote").innerHTML = done?`<div class="notice lock">${fmt(s.submittedAt)}에 완료 제출되었습니다 (취합: ${esc(headTitle(U[S.unit]))}). 추가 의견은 취합 담당자께 직접 전해 주세요.</div>`:"";
   const ro = done || readOnly();
-  ["wName","wTask","wOther","ws1","ws2","ws3","wSubmit"].forEach(id=>$(id).disabled=ro);
+  ["wName","wTask","wOther",...SECS.map(([k])=>"w"+k),"wSubmit"].forEach(id=>$(id).disabled=ro);
   const list=unitPosts(S.unit);
   $("wCount").textContent=list.length?`${list.length}건`:"";
   $("wPosts").innerHTML = list.length? list.map(p=>postHTML(p,!done)).join("") : `<div class="empty">아직 올라온 답변이 없습니다. 첫 답변을 올려 주세요.</div>`;
@@ -432,15 +435,15 @@ function submitPost(e){
   e.preventDefault(); const u=U[S.unit]; const v=$("wName").value;
   const name = v==="other"? $("wOther").value.trim() : (v!==""? u.roster[+v][0] : "");
   const task=$("wTask").value.trim();
-  const sec={s1:$("ws1").value.trim(),s2:$("ws2").value.trim(),s3:$("ws3").value.trim()};
+  const sec=secObj(SECS.map(([k])=>$("w"+k).value.trim()));
   if(!name){toast("작성자 이름을 골라 주세요.");return;}
-  if(!sec.s1&&!sec.s2&&!sec.s3){toast("협의 내용을 한 항목 이상 적어 주세요.");return;}
+  if(!Object.values(sec).some(Boolean)){toast("협의 내용을 한 항목 이상 적어 주세요.");return;}
   $("wSubmit").disabled=true;
   const editing=S.editingId;
   run(async()=>{
     await apiPost(editing? {action:"updatePost",id:editing,name,task,...sec} : {action:"addPost",roundId:S.roundId,unit:S.unit,name,task,...sec});
     toast(editing?"답변을 고쳤습니다.":"답변을 제출했습니다.");
-    S.editingId=null; setW(["","",""]); $("wEditing").textContent=""; $("wCancel").hidden=true; $("wSubmit").textContent="제출";
+    S.editingId=null; setW(EMPTY()); $("wEditing").textContent=""; $("wCancel").hidden=true; $("wSubmit").textContent="제출";
   }).finally(()=>{ if($("wSubmit")) $("wSubmit").disabled = statusOf(S.unit)==="done"||readOnly(); });
 }
 function postOps(e){
@@ -509,7 +512,7 @@ function saveSum(status,reopen=false){
   const v = reopen? secVals(prev) : SECS.map(([k])=>$("h"+k).value.trim());
   ["hDraft","hDone","hReopen"].forEach(id=>$(id)&&($(id).disabled=true));
   run(async()=>{
-    await apiPost({action:"saveSummary",roundId:S.roundId,unit:S.unit,s1:v[0],s2:v[1],s3:v[2],status,head:u.head});
+    await apiPost({action:"saveSummary",roundId:S.roundId,unit:S.unit,...secObj(v),status,head:u.head});
     S.sumDirty=false;
     toast(status==="done"?`${u.name} 협의 결과를 완료 제출했습니다.`: reopen?"완료를 취소했습니다. 다시 고칠 수 있습니다.":"임시 저장했습니다.");
   }).finally(()=>refreshHead());
@@ -550,9 +553,9 @@ function mountBoard(P){
     const L=SECS.map(([,l],i)=>`${i+1}. ${l}`);
     const rows=[["구분","부서/학년","취합 부장","상태","완료 제출 시각",...L.map(x=>"[결과] "+x),"작성자","담당 업무",...L.map(x=>"[답변] "+x),"답변 시각"]];
     UNITS.forEach(u=>{ const s=sumOf(u.key), st=STATUS_LABEL[statusOf(u.key)], list=unitPosts(u.key), isDone=s&&s.status==="done";
-      const base=[u.kind==="dept"?"부서":"학년",u.name,u.head,st,isDone?new Date(Number(s.submittedAt)).toLocaleString("ko-KR"):"",...(isDone?secVals(s):["","",""])];
-      const blank=[base[0],base[1],"","","","","",""];
-      if(!list.length) rows.push([...base,"","","","","",""]);
+      const base=[u.kind==="dept"?"부서":"학년",u.name,u.head,st,isDone?new Date(Number(s.submittedAt)).toLocaleString("ko-KR"):"",...(isDone?secVals(s):EMPTY())];
+      const blank=[base[0],base[1],"","","",...EMPTY()];
+      if(!list.length) rows.push([...base,"","",...EMPTY(),""]);
       list.forEach((p,i)=>rows.push([...(i===0?base:blank),p.name,p.task||"",...secVals(p),new Date(Number(p.createdAt)).toLocaleString("ko-KR")])); });
     const csv="﻿"+rows.map(r=>r.map(csvCell).join(",")).join("\r\n");
     const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8"}));
