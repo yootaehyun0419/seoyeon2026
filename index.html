@@ -198,6 +198,12 @@ const API_URL = "https://script.google.com/macros/s/AKfycbxqo61kuB8x6E2lRnvqM5iH
 /* ======================================================================= */
 
 const UNITS = [
+ {key:"g1",name:"1학년",kind:"grade",head:"진송미",roster:[["진송미","1-1 담임"],["송이슬","1-2 담임"],["심미정","1-3 담임"],["전소영","1-4 담임"],["황진이","1-5 담임"],["박지영","1-6 담임"],["김세미","1-7 담임"]]},
+ {key:"g2",name:"2학년",kind:"grade",head:"황설주",roster:[["황설주","2-1 담임"],["조용주","2-2 담임"],["김민희","2-3 담임"],["오성린","2-4 담임"],["이선영","2-5 담임"],["한주연","2-6 담임"],["정은영","2-7 담임"]]},
+ {key:"g3",name:"3학년",kind:"grade",head:"황승진",roster:[["황승진","3-1 담임"],["김춘섭","3-2 담임"],["김재현","3-3 담임"],["신수진","3-4 담임"],["김예솔","3-5 담임"],["안수연","3-6 담임"],["정국희","3-7 담임"],["박솔빈","3-8 담임"],["편세훈","3학년 과학 전담"],["윤선주","3학년 영어 전담"]]},
+ {key:"g4",name:"4학년",kind:"grade",head:"정지아",roster:[["정지아","4-1 담임"],["정진아","4-2 담임"],["박향애","4-3 담임"],["홍승조","4-4 담임"],["전보배","4-5 담임"],["윤 정","4-6 담임"],["김은경","4-7 담임"],["정선형","4-8 담임"],["오안나","4-9 담임"],["박진희","4-10 담임"],["전꽃님","4학년 영어 전담"],["정옥희","4학년 과학 전담"]]},
+ {key:"g5",name:"5학년",kind:"grade",head:"박흥제",roster:[["박흥제","5-1 담임"],["하명희","5-2 담임"],["백은미","5-3 담임"],["박정민","5-4 담임"],["김민경","5-5 담임"],["이영민","5-6 담임"],["소민섭","5-7 담임"],["안정현","5-8 담임"],["나현미","5-9 담임"],["유선형","5-10 담임"],["김지현","5학년 과학 전담"],["박송이","5학년 영어 전담"],["조원정","5학년 체육 전담"]]},
+ {key:"g6",name:"6학년",kind:"grade",head:"김유진",roster:[["김유진","6-1 담임"],["임서정","6-2 담임"],["유태현","6-3 담임"],["허다영","6-4 담임"],["박은지","6-5 담임"],["이정우","6-6 담임"],["이새봄","6-7 담임"],["강수지","6-8 담임"],["김경집","6-9 담임"],["김소연","6학년 과학 전담"],["신윤희","6학년 영어 전담"],["최광환","6학년 체육 전담"]]},
  {key:"gyomu",name:"교무기획부",kind:"dept",head:"편세훈",roster:[["편세훈","교무기획·미래학교"],["김춘섭","학교운영위원회"],["유선형","NEIS 업무(1)"],["강수지","NEIS 업무(2)"],["박향애","체험학습"],["박송이","학부모회"],["박솔빈","정보공시·학교평가"],["이새봄","중입배정·학생표창"],["박은지","졸업앨범"],["신윤희","교육홍보"],["김예솔","친목"],["조창우","특수교육(1)"],["심준호","특수교육(2)"],["허진경","특수교육(3)"],["최유리","특수교육(4)"],["이근희","교무실무사 · 학적관리·신입생 입학·교과서"],["정숙희","교무실무사 · 공문서관리·수업계·운영위원회 지원"],["임현주","과학실무사 · 과학실험 지원·홈페이지·정보화기기"]]},
  {key:"curri",name:"교육과정부",kind:"dept",head:"유태현",roster:[["유태현","교육과정 운영"],["허다영","장학 및 수업"],["김경집","교원연구회·연수·영어"],["김민희","학습공동체·포상"],["심미정","교원역량·경제교육"],["황진이","학력평가"],["정은영","교과서·진단총괄평가"],["백은미","기초학력"],["박지영","캠프·학습도약계절학기"],["김세미","두드림·학습지원튜터"],["조용주","기초학습지원센터"],["홍지은","도서관·독서교육"]]},
  {key:"future",name:"미래진로부",kind:"dept",head:"김재현",roster:[["김재현","미래진로 기획 및 운영"],["정선형","화성미래교육협력지구1"],["정진아","화성미래교육협력지구2"],["나현미","화성 보조금 지원사업"],["오성린","진로교육"],["김소연","학생맞춤통합지원"],["이선영","동아리 운영"],["김민경","수질대기질관리"],["박진희","환경관리"],["윤 정","환경교육"]]},
@@ -206,12 +212,6 @@ const UNITS = [
  {key:"sci",name:"과학정보부",kind:"dept",head:"전꽃님",roster:[["전꽃님","과학정보기획"],["송이슬","정보보안"],["안수연","정보화 지원"],["하명희","영재·발명·과학의 날"],["조원정","방송·정보화실관리"],["박정민","정보교육"]]},
  {key:"office",name:"행정실",kind:"dept",head:"류수민",headLabel:"류수민 행정실장",roster:[["류수민","행정실장"],["하동홍","행정과장"],["허진우","행정실"],["김동하","행정실"],["김유진","행정실"],["유간성","행정실"]]},
  {key:"neulbom",name:"늘봄(방과후, 돌봄)",kind:"dept",head:"이한진",headLabel:"이한진 늘봄전담실장",roster:[["이한진","늘봄전담실장"],["문형선","늘봄실무사"],["김정희","돌봄교실1"],["배정미","돌봄교실2"],["정진희","돌봄교실3"]]},
- {key:"g1",name:"1학년",kind:"grade",head:"진송미",roster:[["진송미","1-1 담임"],["송이슬","1-2 담임"],["심미정","1-3 담임"],["전소영","1-4 담임"],["황진이","1-5 담임"],["박지영","1-6 담임"],["김세미","1-7 담임"]]},
- {key:"g2",name:"2학년",kind:"grade",head:"황설주",roster:[["황설주","2-1 담임"],["조용주","2-2 담임"],["김민희","2-3 담임"],["오성린","2-4 담임"],["이선영","2-5 담임"],["한주연","2-6 담임"],["정은영","2-7 담임"]]},
- {key:"g3",name:"3학년",kind:"grade",head:"황승진",roster:[["황승진","3-1 담임"],["김춘섭","3-2 담임"],["김재현","3-3 담임"],["신수진","3-4 담임"],["김예솔","3-5 담임"],["안수연","3-6 담임"],["정국희","3-7 담임"],["박솔빈","3-8 담임"],["편세훈","3학년 과학 전담"],["윤선주","3학년 영어 전담"]]},
- {key:"g4",name:"4학년",kind:"grade",head:"정지아",roster:[["정지아","4-1 담임"],["정진아","4-2 담임"],["박향애","4-3 담임"],["홍승조","4-4 담임"],["전보배","4-5 담임"],["윤 정","4-6 담임"],["김은경","4-7 담임"],["정선형","4-8 담임"],["오안나","4-9 담임"],["박진희","4-10 담임"],["전꽃님","4학년 영어 전담"],["정옥희","4학년 과학 전담"]]},
- {key:"g5",name:"5학년",kind:"grade",head:"박흥제",roster:[["박흥제","5-1 담임"],["하명희","5-2 담임"],["백은미","5-3 담임"],["박정민","5-4 담임"],["김민경","5-5 담임"],["이영민","5-6 담임"],["소민섭","5-7 담임"],["안정현","5-8 담임"],["나현미","5-9 담임"],["유선형","5-10 담임"],["김지현","5학년 과학 전담"],["박송이","5학년 영어 전담"],["조원정","5학년 체육 전담"]]},
- {key:"g6",name:"6학년",kind:"grade",head:"김유진",roster:[["김유진","6-1 담임"],["임서정","6-2 담임"],["유태현","6-3 담임"],["허다영","6-4 담임"],["박은지","6-5 담임"],["이정우","6-6 담임"],["이새봄","6-7 담임"],["강수지","6-8 담임"],["김경집","6-9 담임"],["김소연","6학년 과학 전담"],["신윤희","6학년 영어 전담"],["최광환","6학년 체육 전담"]]},
 ];
 const U = Object.fromEntries(UNITS.map(u=>[u.key,u]));
 const headTitle = u => u.headLabel || (u.kind==="dept" ? `${u.head} 부장` : `${u.head} 학년부장`);
@@ -345,7 +345,7 @@ function renderUnits(){
     const st=statusOf(u.key), n=unitPosts(u.key).length;
     const s= st==="done"?`<span class="s done">완료</span>`:`<span class="s">${n?n+"건":""}</span>`;
     return `<button class="unit" data-unit="${u.key}" aria-current="${S.mode!=="board"&&S.unit===u.key}"><span class="n">${u.name}</span>${s}</button>`;}).join("")}</div>`;
-  $("units").innerHTML=grp("dept","업무(기능) 부서")+grp("grade","학년");
+  $("units").innerHTML=grp("grade","학년")+grp("dept","업무(기능) 부서");
   $("units").hidden = S.mode==="board";
   $("layout").style.gridTemplateColumns = S.mode==="board" ? "minmax(0,1fr)" : "";
 }
@@ -540,8 +540,8 @@ function mountBoard(P){
       <div class="actions"><button id="bCopy">완료분 전체 복사</button><button id="bCsv">CSV 내려받기</button></div></div>
     ${permNote()}
     <div class="sumline"><span><b style="color:var(--seal)">${counts.done}</b>/${UNITS.length} 완료</span><span><b>${counts.draft}</b>취합 중</span><span><b>${counts.coll}</b>답변 수집 중</span><span class="muted"><b>${counts.wait}</b>대기</span></div>
-    <div><div class="eyebrow" style="margin-bottom:6px">업무(기능) 부서</div><div class="board dept">${UNITS.filter(u=>u.kind==="dept").map(cell).join("")}</div></div>
     <div><div class="eyebrow" style="margin-bottom:6px">학년</div><div class="board">${UNITS.filter(u=>u.kind==="grade").map(cell).join("")}</div></div>
+    <div><div class="eyebrow" style="margin-bottom:6px">업무(기능) 부서</div><div class="board dept">${UNITS.filter(u=>u.kind==="dept").map(cell).join("")}</div></div>
     <div class="doc">${UNITS.map(art).join("")}</div>`;
   P.querySelectorAll("[data-goto]").forEach(b=>b.onclick=()=>{ S.unit=b.dataset.goto; ls.set("hy.unit",S.unit); $("tab-head").click(); });
   $("bCopy").onclick=async()=>{ const t=compileText(); try{await navigator.clipboard.writeText(t); toast("복사했습니다. 한글·워드에 붙여 넣으세요.");}
@@ -564,7 +564,7 @@ function mountBoard(P){
 /* ---------- 시작 ---------- */
 (function boot(){
   S.mode=["write","head","board"].includes(ls.get("hy.mode"))? ls.get("hy.mode") : "write";
-  S.unit=U[ls.get("hy.unit")]? ls.get("hy.unit") : "gyomu";
+  S.unit=U[ls.get("hy.unit")]? ls.get("hy.unit") : "g1";
   document.querySelectorAll(".tabs button").forEach(x=>x.setAttribute("aria-pressed",x.dataset.mode===S.mode));
   const pw=ls.get("hy.admin");
   renderUnits();
